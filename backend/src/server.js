@@ -3,8 +3,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const PORT = process.env.PORT || 3000;
+// Support pour Alwaysdata et développement local
+const PORT = process.env.ALWAYSDATA_HTTPD_PORT || process.env.PORT || 3000;
+const HOST = process.env.ALWAYSDATA_HTTPD_IP || 'localhost';
 
-app.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Serveur démarré sur ${HOST}:${PORT}`);
 });

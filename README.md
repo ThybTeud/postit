@@ -175,52 +175,65 @@ npm run test:coverage
 
 ### 3. Déploiement du Backend
 
-#### A. Via SSH et Git
+#### A. Préparation du code
 
-1. Créer un site de type **Node.js** dans Alwaysdata
-2. Configurer la version Node.js (18+)
-3. Se connecter en SSH :
+1. Se connecter en SSH à votre compte Alwaysdata :
 
 ```bash
 ssh [votre-compte]@ssh-[votre-compte].alwaysdata.net
 ```
 
-4. Cloner le repository et installer les dépendances :
+2. Cloner le repository et installer les dépendances :
 
 ```bash
-cd ~/www
+cd ~/
 git clone <url-du-repo> postit
 cd postit/backend
 npm install --production
 ```
 
-5. Créer le fichier `.env` avec les bonnes configurations :
+3. Créer le fichier `.env` avec vos configurations :
 
 ```env
-PORT=8080
-DATABASE_URL=postgresql://user:password@postgresql-[compte].alwaysdata.net/postit
-CORS_ORIGIN=https://[votre-frontend].alwaysdata.net
+DATABASE_URL=postgresql://[user]:[password]@postgresql-[compte].alwaysdata.net/postit
+CORS_ORIGIN=https://[votre-site-frontend].alwaysdata.net
 NODE_ENV=production
 ```
 
-6. Dans le panel Alwaysdata, configurer le site :
-   - **Commande** : `node src/server.js`
-   - **Répertoire de travail** : `/home/[compte]/www/postit/backend`
-   - **Variables d'environnement** : ajouter les variables du `.env`
+**Note importante** : Ne définissez PAS les variables `PORT` et `HOST` dans le `.env`. Alwaysdata les fournit automatiquement via `ALWAYSDATA_HTTPD_PORT` et `ALWAYSDATA_HTTPD_IP`, et le code les utilise déjà.
 
-#### B. Redémarrage
+#### B. Configuration du site Node.js
 
-Redémarrer l'application dans le panel Sites > [votre-site] > Redémarrer
+1. Dans le panel Alwaysdata, aller dans **Web** > **Sites** > **Ajouter un site**
+2. Choisir le type **Node.js**
+3. Configurer le site :
+   - **Adresses** : choisir votre domaine ou sous-domaine (ex: `api.votrecompte.alwaysdata.net`)
+   - **Version Node.js** : 18 ou supérieur
+   - **Commande** : `/home/[votre-compte]/postit/backend/src/server.js`
+   - **Répertoire de travail** : `/home/[votre-compte]/postit/backend`
+   - **Variables d'environnement** : Ajouter chaque variable de votre `.env` :
+     - Cliquer sur "Ajouter une variable d'environnement"
+     - `DATABASE_URL` = `postgresql://[user]:[password]@postgresql-[compte].alwaysdata.net/postit`
+     - `CORS_ORIGIN` = `https://[votre-site-frontend].alwaysdata.net`
+     - `NODE_ENV` = `production`
+
+4. Sauvegarder et le site démarrera automatiquement
+
+#### C. Vérification
+
+Tester l'API : `https://[votre-site-backend].alwaysdata.net/api/health`
+
+Réponse attendue : `{"status":"ok"}`
 
 ### 4. Déploiement du Frontend
 
 #### A. Build local
 
-1. Configurer l'URL du backend en production :
+1. Sur votre machine locale, configurer l'URL du backend en production :
 
 ```bash
 cd frontend
-echo "VITE_API_URL=https://[votre-backend].alwaysdata.net" > .env.production
+echo "VITE_API_URL=https://[votre-site-backend].alwaysdata.net" > .env.production
 ```
 
 2. Générer le build :
@@ -229,18 +242,39 @@ echo "VITE_API_URL=https://[votre-backend].alwaysdata.net" > .env.production
 npm run build
 ```
 
-#### B. Upload sur Alwaysdata
+Cela créera un dossier `dist/` contenant les fichiers statiques à déployer.
 
-1. Créer un site de type **Fichiers statiques** dans Alwaysdata
-2. Configurer le répertoire racine : `/home/[compte]/www/postit-frontend`
-3. Uploader le contenu du dossier `dist/` via FTP, SFTP ou SSH :
+#### B. Configuration du site sur Alwaysdata
+
+1. Se connecter en SSH et créer le répertoire pour le frontend :
 
 ```bash
-# Via SSH
-scp -r dist/* [compte]@ssh-[compte].alwaysdata.net:www/postit-frontend/
+ssh [votre-compte]@ssh-[votre-compte].alwaysdata.net
+mkdir -p ~/www/postit-frontend
+exit
 ```
 
-4. Le site est maintenant accessible à l'URL configurée
+2. Dans le panel Alwaysdata, aller dans **Web** > **Sites** > **Ajouter un site**
+3. Configurer le site :
+   - **Type** : Fichiers statiques (Apache)
+   - **Adresses** : choisir votre domaine ou sous-domaine (ex: `postit.votrecompte.alwaysdata.net`)
+   - **Répertoire racine** : `/home/[votre-compte]/www/postit-frontend`
+
+#### C. Upload des fichiers
+
+Depuis votre machine locale, uploader le contenu du dossier `dist/` :
+
+```bash
+# Via SCP
+scp -r dist/* [votre-compte]@ssh-[votre-compte].alwaysdata.net:www/postit-frontend/
+
+# OU via SFTP
+sftp [votre-compte]@ssh-[votre-compte].alwaysdata.net
+put -r dist/* www/postit-frontend/
+exit
+```
+
+Le site est maintenant accessible à l'URL configurée !
 
 ### 5. Configuration CORS
 
@@ -253,21 +287,34 @@ CORS_ORIGIN=https://[votre-frontend].alwaysdata.net
 
 ### 6. Maintenance et mises à jour
 
-Pour mettre à jour l'application :
+#### Backend
+
+Se connecter en SSH et mettre à jour le code :
 
 ```bash
-# Backend
-cd ~/www/postit/backend
+ssh [votre-compte]@ssh-[votre-compte].alwaysdata.net
+cd ~/postit/backend
 git pull
 npm install --production
-# Redémarrer depuis le panel Alwaysdata
+exit
+```
 
-# Frontend
-cd local-frontend
+Puis redémarrer l'application depuis le panel Alwaysdata :
+**Web** > **Sites** > Sélectionner votre site backend > **Redémarrer**
+
+#### Frontend
+
+Sur votre machine locale, reconstruire et redéployer :
+
+```bash
+# Dans votre dossier local du projet
+cd frontend
 git pull
 npm run build
-scp -r dist/* [compte]@ssh-[compte].alwaysdata.net:www/postit-frontend/
+scp -r dist/* [votre-compte]@ssh-[votre-compte].alwaysdata.net:www/postit-frontend/
 ```
+
+**Astuce** : Pour éviter de retaper le mot de passe à chaque fois, configurez une clé SSH sur Alwaysdata.
 
 ## Structure de la base de données
 
