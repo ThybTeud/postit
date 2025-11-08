@@ -12,7 +12,7 @@ const connectionString = isTest
 
 const pool = new Pool({
   connectionString,
-  ssl: process.env.NODE_ENV === 'production'
+  ssl: connectionString?.includes('neon.tech')
     ? { rejectUnauthorized: false }
     : false
 });
