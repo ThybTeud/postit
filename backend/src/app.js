@@ -7,14 +7,18 @@ const app = express();
 // Configuration CORS plus permissive pour le développement
 const corsOptions = {
   origin: function (origin, callback) {
-    // Autoriser les requêtes sans origin (comme Postman, curl, etc.)
     if (!origin) return callback(null, true);
     
     const allowedOrigins = process.env.CORS_ORIGIN 
       ? process.env.CORS_ORIGIN.split(',')
-      : ['*'];
+      : [];
     
-    if (allowedOrigins.includes('*') || allowedOrigins.indexOf(origin) !== -1) {
+    // En développement Codespaces, autoriser tous les domaines *.app.github.dev
+    const isCodespaces = origin && origin.includes('.app.github.dev');
+    
+    if (allowedOrigins.includes('*') || 
+        allowedOrigins.indexOf(origin) !== -1 || 
+        isCodespaces) {
       callback(null, true);
     } else {
       callback(new Error('Non autorisé par CORS'));

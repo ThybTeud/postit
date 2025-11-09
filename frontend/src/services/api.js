@@ -1,4 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Console.log
+console.log(API_URL);
+//
 
 export const getNotes = async () => {
   const response = await fetch(`${API_URL}/api/notes`);
